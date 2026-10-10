@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+  <title>JNP Cargo Movers - Material Delivery Indent</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    input, select, textarea { font-size: 16px !important; }
+    .autocomplete-list { max-height: 200px; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+    body { padding-bottom: env(safe-area-inset-bottom, 25px); }
+  </style>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800 p-3 sm:p-6" onclick="closeAllDropdowns()">
+  <div class="max-w-md mx-auto bg-white shadow-xl rounded-2xl p-4 sm:p-5 border border-slate-200" onclick="event.stopPropagation()">
+    
+    <!-- Top Bar with Logo & Navigation -->
+    <div class="border-b border-slate-200 pb-3 mb-4 flex items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <img 
+          src="logo.png" 
+          alt="JNP Cargo Movers" 
+          class="h-11 sm:h-12 w-auto object-contain"
+          onerror="this.onerror=null; this.src='https://placehold.co/120x45/002b66/ffffff?text=JNP+CARGO';"
+        />
+        <div class="border-l border-slate-200 pl-2.5">
+          <h1 class="text-xs sm:text-sm font-extrabold text-emerald-800 tracking-tight leading-tight uppercase">DELIVERY INDENT</h1>
+          <p class="text-[10px] text-slate-500 font-semibold tracking-wider">मटेरियल डिलीवरी इंडेंट</p>
+        </div>
+      </div>
+      <button type="button" onclick="fetchMasters()" class="text-xs text-emerald-700 font-bold hover:underline py-1 px-2.5 rounded-lg bg-emerald-50 border border-emerald-200">↻ Sync</button>
+    </div>
+
+    <!-- Active Form -->
+    <form id="indentForm" onsubmit="handleFormSubmit(event)" class="space-y-3" autocomplete="off">
+      
+      <!-- Submitted By -->
+      <div>
+        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">Submitted By *</label>
+        <select id="staffSelect" onchange="toggleCustomStaff()" required class="w-full border rounded-xl p-2.5 bg-slate-50 font-medium">
+          <option value="">Select Staff...</option>
+        </select>
+        <input type="text" id="staffCustom" placeholder="Enter your name" class="hidden mt-1.5 w-full border border-emerald-400 rounded-xl p-2.5 bg-emerald-50 font-medium" />
+      </div>
+
+      <!-- Truck Number & Driver Name -->
+      <div class="relative">
+        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">1. Truck Number *</label>
+        <input 
+          type="text" 
+          id="truckInput" 
+          required 
+          placeholder="e.g. MH18BZ0271 or 0271" 
+          class="w-full border rounded-xl p-2.5 bg-slate-50 font-semibold uppercase tracking-wide focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+          oninput="filterOptions('truck', this.value)"
+          onfocus="filterOptions('truck', this.value)"
+        />
+        <div id="truckDropdown" class="autocomplete-list hidden absolute z-30 w-full bg-white border border-slate-300 rounded-xl shadow-2xl mt-1"></div>
+      </div>
+
+      <div class="relative">
+        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">2. Driver Name *</label>
+        <input 
+          type="text" 
+          id="driverInput" 
+          required 
+          placeholder="Type driver name..." 
+          class="w-full border rounded-xl p-2.5 bg-slate-50 font-semibold focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+          oninput="filterOptions('driver', this.value)"
+          onfocus="filterOptions('driver', this.value)"
+        />
+        <div id="driverDropdown" class="autocomplete-list hidden absolute z-30 w-full bg-white border border-slate-300 rounded-xl shadow-2xl mt-1"></div>
+      </div>
+
+      <!-- LR Number & DI Number -->
+      <div class="grid grid-cols-2 gap-2.5">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">3. LR Number *</label>
+          <input type="text" id="lrInput" required placeholder="e.g. A21217" class="w-full border rounded-xl p-2.5 bg-slate-50 font-semibold uppercase tracking-wider" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">4. DI Number *</label>
+          <input type="text" id="diInput" required placeholder="e.g. DI-8490" class="w-full border rounded-xl p-2.5 bg-slate-50 font-semibold uppercase tracking-wider" />
+        </div>
+      </div>
+
+      <!-- Qty Issued & Qty Delivered -->
+      <div class="grid grid-cols-2 gap-2.5">
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">5. Qty Issued *</label>
+          <input type="number" step="any" id="qtyIssued" required placeholder="e.g. 500" class="w-full border rounded-xl p-2.5 bg-slate-50 font-bold" />
+        </div>
+        <div>
+          <label class="block text-xs font-bold text-slate-600 uppercase mb-1">6. Qty Delivered</label>
+          <input type="number" step="any" id="qtyDelivered" placeholder="e.g. 500" class="w-full border rounded-xl p-2.5 bg-slate-50 font-medium" />
+        </div>
+      </div>
+
+      <!-- Party Name & Destination -->
+      <div class="relative">
+        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">7. Party Name *</label>
+        <input 
+          type="text" 
+          id="partyInput" 
+          required 
+          placeholder="Client / Consignee name" 
+          class="w-full border rounded-xl p-2.5 bg-slate-50 font-medium focus:bg-white focus:ring-2 focus:ring-emerald-500"
+          oninput="filterOptions('party', this.value)"
+          onfocus="filterOptions('party', this.value)"
+        />
+        <div id="partyDropdown" class="autocomplete-list hidden absolute z-30 w-full bg-white border border-slate-300 rounded-xl shadow-2xl mt-1"></div>
+      </div>
+
+      <div class="relative">
+        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">8. Destination *</label>
+        <input 
+          type="text" 
+          id="destInput" 
+          required 
+          placeholder="e.g. NASHIK / VILHOLI" 
+          class="w-full border rounded-xl p-2.5 bg-slate-50 font-semibold uppercase focus:bg-white focus:ring-2 focus:ring-emerald-500 focus:outline-none"
+          oninput="filterOptions('dest', this.value)"
+          onfocus="filterOptions('dest', this.value)"
+        />
+        <div id="destDropdown" class="autocomplete-list hidden absolute z-30 w-full bg-white border border-slate-300 rounded-xl shadow-2xl mt-1"></div>
+      </div>
+
+      <!-- Remark -->
+      <div>
+        <label class="block text-xs font-bold text-slate-600 uppercase mb-1">9. Remark</label>
+        <input type="text" id="remarkInput" placeholder="Notes (shortage, breakage, seals intact)" class="w-full border rounded-xl p-2.5 bg-slate-50 font-medium" />
+      </div>
+
+      <!-- Submit Button -->
+      <div class="pt-2">
+        <button type="submit" id="saveBtn" class="w-full py-3 bg-emerald-700 active:bg-emerald-900 text-white font-bold text-sm rounded-xl shadow-lg transition">
+          Record Indent & Send WhatsApp
+        </button>
+      </div>
+    </form>
+
+    <!-- WhatsApp Share Panel -->
+    <div id="shareSection" class="hidden mt-4 p-4 border border-emerald-300 bg-emerald-50 rounded-xl space-y-2.5">
+      <div class="flex items-center gap-2">
+        <span class="text-lg">✅</span>
+        <h3 class="text-xs font-bold text-emerald-950 uppercase tracking-wide">Saved to Indent DB! Forward Update:</h3>
+      </div>
+
+      <button type="button" id="shareBtn" onclick="handleWhatsAppShare()" class="w-full py-3 bg-emerald-600 active:bg-emerald-800 text-white font-bold text-xs rounded-xl flex items-center justify-center gap-2 shadow">
+        <span>📲</span> Share Material Indent on WhatsApp
+      </button>
+
+      <button type="button" onclick="resetForm()" class="w-full py-2.5 bg-slate-200 active:bg-slate-300 text-slate-700 font-semibold text-xs rounded-xl transition">
+        ➕ Next Entry
+      </button>
+    </div>
+
+    <div id="statusToast" class="hidden mt-3 text-center text-xs font-bold p-2.5 rounded-xl"></div>
+  </div>
+
+  <script>
+    // Live Web App URL
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx6PyfwMkrML77E_qbVKgKOFgo5AkomHuBZGxM2uwzyYiaHDvZsPo4O7CYpaQsIVGINMA/exec";
+
+    let lastSavedData = null;
+
+    let masterData = {
+      staff: ["Atul", "Hemant", "Akshay", "Ganesh", "Rahul", "Satish", "Chetan", "Sumit"],
+      trucks: ["MH40CM8975","MH40BL4725","MH18BZ0274","MH40CM1550","MH18BZ0106","MH18BZ0107","MH14KA9717","MH40CM2748","MH40DC1236","MH18BZ0112","MH40CM1569","OD01AB2773","UP95T9393","MH40CM1570","CG07CG1594","MH18BZ0105","MH18BZ0109","OD01AB2873","AP04UB2935","CG07CG1595","CG07CG1596","MH21BH4147","MH18BZ0268","MH18BZ0269","MH18BZ0271","MH18BZ0272","MH18BG8250","MH18BG8251","MH18BG8252","MH18BZ0110","MH18BZ0113","MH18BZ0267","CG07CG2120","MH18BG8256","MH18BG8257","MH18BZ0108","MH18BZ0270","MH18BZ0275","MH18BG8253","MH40CM2747","MH40CM2746","MH40CD4841","MH40CM7805","OD04M6659","CG07CG1597","MH40CM0731","MH18BZ0273","MH18BZ0276"],
+      drivers: ["AKIL KHAN","SHAKIL KHAN","FEROZ KHAN","SANJAY KHABRE","DEVIDAS PATIL","PRAMOD SONWANE","MD IBARAR","RAHUL PAL","RAJESH SHARMA","KRISHNAKUMAR SAHU","RANJIT SONI","BHATU MAHALE","ABDULLAH","MAHENDRA VISHWAKARMA","PRAVIN BHOIR","SINTU YADAV","SUNIL SAHU","OMPRAKASH SAHU","ASHOK SAHU","MD SAGEER","TINKU YADAV","MD MIRAJ","SHOEB PATHAN","KAILASH PATIL","javed ali","asif shaikh","samadhan patil","yunus ansari","ISHWAR BHILL","MAHMOOD KHAN","SHARUKH KHTIK","RAHUL PAAL","MIRAJ AHMED","samadhan kadam","MOHSIN KHAN"],
+      parties: ["CEAT TYRES", "MAHINDRA & MAHINDRA", "TATA MOTORS", "BOSCH", "RELIANCE RETAIL"],
+      destinations: ["NASHIK", "VILHOLI", "OZAR", "DHULE", "NAGPUR", "PUNE", "MUMBAI"]
+    };
+
+    window.addEventListener('DOMContentLoaded', fetchMasters);
+
+    async function fetchMasters() {
+      populateStaff(masterData.staff);
+      try {
+        const res = await fetch(SCRIPT_URL, { method: "GET" });
+        if (res.ok) {
+          const liveData = await res.json();
+          masterData = liveData;
+          populateStaff(masterData.staff);
+        }
+      } catch (e) {
+        console.log("Cached masters ready");
+      }
+    }
+
+    function populateStaff(staffList) {
+      const select = document.getElementById('staffSelect');
+      const cur = select.value;
+      select.innerHTML = '<option value="">Select Staff...</option>';
+      (staffList || []).forEach(s => select.innerHTML += `<option value="${s}">${s}</option>`);
+      select.innerHTML += '<option value="__OTHER__">➕ Other / Enter Name</option>';
+      if (cur) select.value = cur;
+    }
+
+    function toggleCustomStaff() {
+      const sel = document.getElementById('staffSelect');
+      const inp = document.getElementById('staffCustom');
+      if (sel.value === "__OTHER__") {
+        inp.classList.remove('hidden'); inp.required = true; inp.focus();
+      } else {
+        inp.classList.add('hidden'); inp.required = false; inp.value = '';
+      }
+    }
+
+    function filterOptions(type, query) {
+      closeAllDropdowns();
+      const dropdownEl = document.getElementById(type + 'Dropdown');
+      
+      let items = [];
+      if (type === 'truck') items = masterData.trucks;
+      else if (type === 'driver') items = masterData.drivers;
+      else if (type === 'party') items = masterData.parties;
+      else if (type === 'dest') items = masterData.destinations;
+
+      const q = query.replace(/\s+/g, '').toUpperCase();
+      const matched = q ? items.filter(i => i.toUpperCase().includes(q)) : items;
+
+      let html = '';
+      if (matched.length > 0) {
+        matched.forEach(item => {
+          html += `
+            <div class="px-3 py-2.5 text-xs font-semibold hover:bg-emerald-50 cursor-pointer border-b border-slate-100 flex justify-between items-center"
+                 onclick="selectOption('${type}', '${item.replace(/'/g, "\\'")}')">
+              <span>${item}</span>
+              <span class="text-[10px] text-slate-400">Master</span>
+            </div>`;
+        });
+      }
+
+      const exactExists = items.some(i => i.toUpperCase() === q);
+      if (q && !exactExists) {
+        html += `
+          <div class="px-3 py-2.5 text-xs font-bold text-emerald-800 bg-emerald-50 hover:bg-emerald-100 cursor-pointer flex justify-between items-center"
+               onclick="selectOption('${type}', '${q.replace(/'/g, "\\'")}')">
+            <span>➕ Use "${q}"</span>
+            <span class="text-[10px] bg-emerald-200 text-emerald-900 px-1.5 py-0.5 rounded">New</span>
+          </div>`;
+      }
+
+      dropdownEl.innerHTML = html;
+      dropdownEl.classList.remove('hidden');
+    }
+
+    function selectOption(type, value) {
+      document.getElementById(type + 'Input').value = value;
+      closeAllDropdowns();
+    }
+
+    function closeAllDropdowns() {
+      ['truckDropdown', 'driverDropdown', 'partyDropdown', 'destDropdown'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+      });
+    }
+
+    async function handleFormSubmit(e) {
+      e.preventDefault();
+      closeAllDropdowns();
+
+      const staffSel = document.getElementById('staffSelect');
+      const submittedBy = staffSel.value === "__OTHER__" ? document.getElementById('staffCustom').value.trim() : staffSel.value;
+      const truckVal = document.getElementById('truckInput').value.replace(/\s+/g, '').toUpperCase();
+      const lrVal = document.getElementById('lrInput').value.replace(/\s+/g, '').toUpperCase();
+      const diVal = document.getElementById('diInput').value.replace(/\s+/g, '').toUpperCase();
+      const issued = document.getElementById('qtyIssued').value.trim();
+      const delivered = document.getElementById('qtyDelivered').value.trim();
+
+      const truckRegex = /^[A-Z]{2}[0-9]{2}[A-Z]{2}[0-9]{4}$/;
+      if (!truckRegex.test(truckVal)) {
+        alert("Invalid Truck Number! Must follow standard format without space (e.g. MH18BZ0271).");
+        return;
+      }
+
+      if (isNaN(issued) || Number(issued) <= 0) {
+        alert("Please enter a valid Quantity Issued.");
+        return;
+      }
+
+      lastSavedData = {
+        submittedBy: submittedBy,
+        truckNo: truckVal,
+        driverName: document.getElementById('driverInput').value.trim(),
+        lrNo: lrVal,
+        diNo: diVal,
+        qtyIssued: issued,
+        qtyDelivered: delivered || 0,
+        partyName: document.getElementById('partyInput').value.trim(),
+        destination: document.getElementById('destInput').value.trim().toUpperCase(),
+        remark: document.getElementById('remarkInput').value.trim() || "-"
+      };
+
+      const saveBtn = document.getElementById('saveBtn');
+      saveBtn.disabled = true;
+      saveBtn.innerText = "Saving to Google Sheet...";
+
+      try {
+        await fetch(SCRIPT_URL, {
+          method: "POST",
+          mode: "no-cors",
+          headers: { "Content-Type": "text/plain" },
+          body: JSON.stringify(lastSavedData)
+        });
+
+        document.getElementById('indentForm').classList.add('opacity-50', 'pointer-events-none');
+        document.getElementById('shareSection').classList.remove('hidden');
+        showToast("Saved to Indent DB!", "emerald");
+      } catch (err) {
+        document.getElementById('indentForm').classList.add('opacity-50', 'pointer-events-none');
+        document.getElementById('shareSection').classList.remove('hidden');
+        showToast("Saved to Sheet! (Check live rows).", "emerald");
+      }
+    }
+
+    function handleWhatsAppShare() {
+      if (!lastSavedData) return;
+
+      const msg = 
+`📦 *MATERIAL DELIVERY INDENT*
+━━━━━━━━━━━━━━━━━━
+🚚 *Truck No:* ${lastSavedData.truckNo}
+👤 *Driver:* ${lastSavedData.driverName}
+🔖 *LR No:* ${lastSavedData.lrNo}
+📄 *DI No:* ${lastSavedData.diNo}
+🏢 *Party:* ${lastSavedData.partyName}
+📍 *Destination:* ${lastSavedData.destination}
+📊 *Qty Issued:* ${lastSavedData.qtyIssued}
+✅ *Qty Delivered:* ${lastSavedData.qtyDelivered || 'In-Transit'}
+📝 *Remark:* ${lastSavedData.remark}
+━━━━━━━━━━━━━━━━━━
+👷 *Logged By:* ${lastSavedData.submittedBy}`;
+
+      window.location.href = "whatsapp://send?text=" + encodeURIComponent(msg);
+      document.getElementById('shareBtn').innerText = "✓ Sent to WhatsApp (Tap to re-send)";
+    }
+
+    function resetForm() {
+      document.getElementById('indentForm').reset();
+      document.getElementById('indentForm').classList.remove('opacity-50', 'pointer-events-none');
+      document.getElementById('shareSection').classList.add('hidden');
+      document.getElementById('staffCustom').classList.add('hidden');
+      document.getElementById('staffCustom').required = false;
+
+      const saveBtn = document.getElementById('saveBtn');
+      saveBtn.disabled = false;
+      saveBtn.innerText = "Record Indent & Send WhatsApp";
+      hideToast();
+      fetchMasters();
+    }
+
+    function showToast(text, color) {
+      const toast = document.getElementById('statusToast');
+      toast.className = `mt-3 text-center text-xs font-bold p-2.5 rounded-xl bg-${color}-100 text-${color}-800`;
+      toast.innerText = text;
+      toast.classList.remove('hidden');
+    }
+
+    function hideToast() {
+      document.getElementById('statusToast').classList.add('hidden');
+    }
+  </script>
+</body>
+</html>
